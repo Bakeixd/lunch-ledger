@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { NextResponse } from "next/server";
 
 const seed = {
   companies: [{
@@ -21,36 +21,54 @@ const seed = {
   }],
 };
 
-async function ensureTable() {
-  await env.DB.prepare(`
-    CREATE TABLE IF NOT EXISTS app_state (
-      id INTEGER PRIMARY KEY,
-      data TEXT NOT NULL,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `).run();
+function config() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return { url: `${url}/rest/v1/app_state`, key };
 }
 
+const headers = (key: string) => ({
+  apikey: key,
+  authorization: `Bearer ${key}`,
+  "content-type": "application/json",
+});
+
 export async function GET() {
-  await ensureTable();
-  const row = await env.DB.prepare("SELECT data FROM app_state WHERE id = 1").first<{ data: string }>();
-  if (!row) {
-    await env.DB.prepare("INSERT INTO app_state (id, data) VALUES (1, ?)")
-      .bind(JSON.stringify(seed)).run();
-    return Response.json(seed);
+  const supabase = config();
+  if (!supabase) {
+    return NextResponse.json(seed, { headers: { "x-storage-mode": "local-fallback" } });
   }
-  return Response.json(JSON.parse(row.data));
+
+  const response = await fetch(`${supabase.url}?id=eq.1&select=data`, {
+    headers: headers(supabase.key),
+    cache: "no-store",
+  });
+  if (!response.ok) return NextResponse.json({ error: "Database read failed" }, { status: 502 });
+  const rows = await response.json() as { data: typeof seed }[];
+  if (rows[0]?.data) return NextResponse.json(rows[0].data);
+
+  await fetch(supabase.url, {
+    method: "POST",
+    headers: { ...headers(supabase.key), prefer: "return=minimal" },
+    body: JSON.stringify({ id: 1, data: seed }),
+  });
+  return NextResponse.json(seed);
 }
 
 export async function PUT(request: Request) {
-  await ensureTable();
   const value = await request.json();
   if (!value || !Array.isArray(value.companies)) {
-    return Response.json({ error: "Invalid state" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid state" }, { status: 400 });
   }
-  await env.DB.prepare(`
-    INSERT INTO app_state (id, data, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = CURRENT_TIMESTAMP
-  `).bind(JSON.stringify(value)).run();
-  return Response.json({ ok: true });
+  const supabase = config();
+  if (!supabase) return NextResponse.json({ ok: true, local: true });
+
+  const response = await fetch(`${supabase.url}?on_conflict=id`, {
+    method: "POST",
+    headers: { ...headers(supabase.key), prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ id: 1, data: value, updated_at: new Date().toISOString() }),
+  });
+  if (!response.ok) return NextResponse.json({ error: "Database write failed" }, { status: 502 });
+  return NextResponse.json({ ok: true });
 }
