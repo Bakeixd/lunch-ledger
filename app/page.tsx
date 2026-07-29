@@ -42,6 +42,7 @@ export default function Home() {
   const [attendanceOpen, setAttendanceOpen] = useState(true);
   const [attendanceView, setAttendanceView] = useState<"list" | "calendar">("list");
   const [calendarMonth, setCalendarMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -109,6 +110,20 @@ export default function Home() {
       (day) => !day.complimentary && day.attendees.includes(person.id),
     ).length,
   ]));
+  const copySettlement = async () => {
+    const summary = company.people
+      .map((person) =>
+        `${person.name} - ${chargeableCounts[person.id]}회 ${won(chargeableCounts[person.id] * company.price)}`,
+      )
+      .join("\n");
+    try {
+      await navigator.clipboard.writeText(summary);
+      setCopyStatus("copied");
+    } catch {
+      setCopyStatus("failed");
+    }
+    window.setTimeout(() => setCopyStatus("idle"), 1800);
+  };
 
   const addCompany = () => {
     const name = prompt("업체 이름을 입력해 주세요.");
@@ -347,10 +362,23 @@ export default function Home() {
         <section className="card">
           <div className="section-head">
             <div><p className="eyebrow">SETTLEMENT</p><h2>개인별 정산</h2></div>
-            <button className="small-button" onClick={() => updateCompany((c) => ({
-              ...c,
-              people: [...c.people, { id: crypto.randomUUID(), name: `사람 ${c.people.length + 1}`, paid: false }],
-            }))}>＋ 사람 추가</button>
+            <div className="settlement-actions">
+              <button
+                className={`small-button copy-button ${copyStatus}`}
+                disabled={!company.people.length}
+                onClick={copySettlement}
+              >
+                {copyStatus === "copied"
+                  ? "✓ 복사됨"
+                  : copyStatus === "failed"
+                    ? "복사 실패"
+                    : "정산 내역 복사"}
+              </button>
+              <button className="small-button" onClick={() => updateCompany((c) => ({
+                ...c,
+                people: [...c.people, { id: crypto.randomUUID(), name: `사람 ${c.people.length + 1}`, paid: false }],
+              }))}>＋ 사람 추가</button>
+            </div>
           </div>
           <div className="people-grid">
             {company.people.map((person) => (
