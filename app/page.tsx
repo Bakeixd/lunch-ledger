@@ -39,6 +39,9 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const [sync, setSync] = useState<"saving" | "saved" | "offline">("saving");
   const [newLunchDate, setNewLunchDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [attendanceOpen, setAttendanceOpen] = useState(true);
+  const [attendanceView, setAttendanceView] = useState<"list" | "calendar">("list");
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -132,6 +135,32 @@ export default function Home() {
     }));
   };
 
+  const calendarDate = new Date(`${calendarMonth}-01T12:00:00`);
+  const calendarTitle = new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+  }).format(calendarDate);
+  const calendarStart = new Date(calendarDate);
+  calendarStart.setDate(1 - calendarDate.getDay());
+  const calendarDays = Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
+    const key = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+    return { key, date, records: company.days.filter((day) => day.date === key) };
+  });
+  const moveCalendarMonth = (amount: number) => {
+    const next = new Date(calendarDate);
+    next.setMonth(next.getMonth() + amount);
+    setCalendarMonth([
+      next.getFullYear(),
+      String(next.getMonth() + 1).padStart(2, "0"),
+    ].join("-"));
+  };
+
   return (
     <main>
       <nav className="topbar">
@@ -197,10 +226,20 @@ export default function Home() {
           </div>
         </div>
 
-        <section className="card">
-          <div className="section-head">
+        <section className={`card attendance-card ${attendanceOpen ? "open" : "collapsed"}`}>
+          <div className="section-head attendance-heading">
             <div><p className="eyebrow">ATTENDANCE</p><h2>날짜별 식사 체크</h2></div>
-            <div className="date-adder">
+            <button
+              className="collapse-button"
+              aria-expanded={attendanceOpen}
+              onClick={() => setAttendanceOpen((open) => !open)}
+            >
+              {attendanceOpen ? "접기 ↑" : "펼치기 ↓"}
+            </button>
+          </div>
+          {attendanceOpen && <div className="attendance-body">
+            <div className="attendance-toolbar">
+              <div className="date-adder">
               <label>
                 <span>추가할 날짜</span>
                 <input
@@ -210,9 +249,21 @@ export default function Home() {
                 />
               </label>
               <button className="small-button dark" onClick={addLunchDay}>＋ 날짜 추가</button>
+              </div>
+              <div className="view-switch" aria-label="식사 체크 보기 방식">
+                <button
+                  className={attendanceView === "list" ? "active" : ""}
+                  aria-pressed={attendanceView === "list"}
+                  onClick={() => setAttendanceView("list")}
+                >리스트</button>
+                <button
+                  className={attendanceView === "calendar" ? "active" : ""}
+                  aria-pressed={attendanceView === "calendar"}
+                  onClick={() => setAttendanceView("calendar")}
+                >달력</button>
+              </div>
             </div>
-          </div>
-          <div className="table-wrap">
+          {attendanceView === "list" ? <div className="table-wrap">
             <table>
               <thead><tr><th>날짜</th>{company.people.map((p) => <th key={p.id}>{p.name}</th>)}<th>수량</th><th>정산</th><th /></tr></thead>
               <tbody>{company.days.map((day) => (
@@ -257,8 +308,40 @@ export default function Home() {
                 </tr>
               ))}</tbody>
             </table>
-          </div>
+          </div> : <div className="calendar-view">
+            <div className="calendar-nav">
+              <button aria-label="이전 달" onClick={() => moveCalendarMonth(-1)}>‹</button>
+              <strong>{calendarTitle}</strong>
+              <button aria-label="다음 달" onClick={() => moveCalendarMonth(1)}>›</button>
+            </div>
+            <div className="calendar-grid calendar-weekdays">
+              {["일", "월", "화", "수", "목", "금", "토"].map((day) => <span key={day}>{day}</span>)}
+            </div>
+            <div className="calendar-grid calendar-days">
+              {calendarDays.map(({ key, date, records }) => (
+                <div
+                  key={key}
+                  className={`calendar-cell ${date.getMonth() !== calendarDate.getMonth() ? "outside" : ""}`}
+                >
+                  <span className="calendar-date">{date.getDate()}</span>
+                  {records.map((record) => (
+                    <div key={record.id} className={`calendar-record ${record.complimentary ? "free" : ""}`}>
+                      <b>{record.attendees.length}명</b>
+                      <span>{record.complimentary ? "무료" : won(record.attendees.length * company.price)}</span>
+                      <small>
+                        {record.attendees
+                          .map((id) => company.people.find((person) => person.id === id)?.name)
+                          .filter(Boolean)
+                          .join(", ") || "식사 인원 없음"}
+                      </small>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>}
           {!company.days.length && <div className="empty">날짜를 추가하고 식사한 사람을 체크해 주세요.</div>}
+          </div>}
         </section>
 
         <section className="card">
