@@ -38,6 +38,9 @@ button { cursor:pointer; }
 .card { background:var(--white); border:1px solid var(--line); border-radius:12px; margin-top:16px; padding:24px; box-shadow:0 1px 1px rgba(0,0,0,.03); }
 .section-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; }
 h2 { margin:0; font-size:20px; letter-spacing:-.4px; }
+.date-adder { display:flex; align-items:flex-end; gap:8px; }
+.date-adder label { display:grid; gap:4px; color:var(--mute); font-size:11px; }
+.date-adder input { height:36px; border:1px solid var(--line); border-radius:6px; background:var(--white); padding:0 10px; color:var(--ink); font-size:13px; }
 .small-button { height:36px; border:1px solid var(--line); border-radius:6px; background:var(--white); padding:0 10px; font-size:13px; font-weight:500; }
 .small-button.dark { background:var(--ink); color:white; border-color:var(--ink); }
 .table-wrap { overflow-x:auto; }
@@ -46,8 +49,8 @@ th { color:var(--mute); font:500 11px/16px "Courier New",monospace; text-transfo
 th:first-child,td:first-child { text-align:left; }
 td { border-top:1px solid var(--line); padding:12px 10px; text-align:center; font-size:13px; }
 td:first-child { min-width:180px; }
-td:first-child input { position:absolute; opacity:0; pointer-events:none; }
-td:first-child span { font-weight:500; }
+td:first-child input { display:block; width:145px; border:1px solid var(--line); border-radius:6px; background:var(--white); padding:6px 8px; color:var(--ink); font-size:12px; }
+td:first-child span { display:block; margin-top:5px; color:var(--mute); font-size:11px; }
 .check { width:32px; height:32px; border:1px solid #d8d8d8; border-radius:6px; background:white; color:white; font-weight:700; }
 .check.on { background:var(--ink); border-color:var(--ink); }
 .icon-button { border:0; background:transparent; color:var(--mute); font-size:20px; }
@@ -70,4 +73,6 @@ button:focus-visible,input:focus-visible { outline:2px solid var(--blue); outlin
   .panel-head{align-items:flex-start;flex-direction:column}.price-editor{width:100%}.stats{grid-template-columns:1fr 1fr}.stats>div{padding:18px}
   .stats>div:nth-child(2){border-right:0}.stats>div:last-child{grid-column:1/-1;border-top:1px solid var(--line)}
   .people-grid{grid-template-columns:1fr}.card{padding:16px}.tabs .add-tab{margin-left:0}
+  .section-head{align-items:flex-start;flex-direction:column}.date-adder{width:100%}.date-adder label{flex:1}.date-adder input{width:100%}
 }
+
