@@ -1,9 +1,12 @@
+Exit code: 0
+Wall time: 0.7 seconds
+Output:
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Person = { id: string; name: string; paid: boolean };
-type LunchDay = { id: string; date: string; attendees: string[] };
+type LunchDay = { id: string; date: string; attendees: string[]; complimentary?: boolean };
 type Company = { id: string; name: string; price: number; people: Person[]; days: LunchDay[] };
 type AppState = { companies: Company[] };
 
@@ -89,9 +92,22 @@ export default function Home() {
     () => company.days.reduce((sum, day) => sum + day.attendees.length, 0),
     [company],
   );
+  const chargeableMeals = useMemo(
+    () => company.days.reduce(
+      (sum, day) => sum + (day.complimentary ? 0 : day.attendees.length),
+      0,
+    ),
+    [company],
+  );
   const counts = Object.fromEntries(company.people.map((person) => [
     person.id,
     company.days.filter((day) => day.attendees.includes(person.id)).length,
+  ]));
+  const chargeableCounts = Object.fromEntries(company.people.map((person) => [
+    person.id,
+    company.days.filter(
+      (day) => !day.complimentary && day.attendees.includes(person.id),
+    ).length,
   ]));
 
   const addCompany = () => {
@@ -179,7 +195,7 @@ export default function Home() {
 
           <div className="stats">
             <div><span>총 도시락</span><strong>{totalMeals}</strong><small>개</small></div>
-            <div><span>총 결제금액</span><strong>{won(totalMeals * company.price)}</strong></div>
+            <div><span>총 결제금액</span><strong>{won(chargeableMeals * company.price)}</strong></div>
             <div><span>입금 완료</span><strong>{company.people.filter((p) => p.paid).length}</strong><small> / {company.people.length}명</small></div>
           </div>
         </div>
@@ -201,7 +217,7 @@ export default function Home() {
           </div>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>날짜</th>{company.people.map((p) => <th key={p.id}>{p.name}</th>)}<th>수량</th><th /></tr></thead>
+              <thead><tr><th>날짜</th>{company.people.map((p) => <th key={p.id}>{p.name}</th>)}<th>수량</th><th>정산</th><th /></tr></thead>
               <tbody>{company.days.map((day) => (
                 <tr key={day.id}>
                   <td>
@@ -225,6 +241,21 @@ export default function Home() {
                     >{checked ? "✓" : ""}</button></td>;
                   })}
                   <td><b>{day.attendees.length}개</b></td>
+                  <td>
+                    <button
+                      className={`sample-toggle ${day.complimentary ? "on" : ""}`}
+                      aria-pressed={Boolean(day.complimentary)}
+                      aria-label={`${prettyDate(day.date)} ${day.complimentary ? "유료로 변경" : "무료 샘플로 변경"}`}
+                      onClick={() => updateCompany((c) => ({
+                        ...c,
+                        days: c.days.map((d) => d.id === day.id
+                          ? { ...d, complimentary: !d.complimentary }
+                          : d),
+                      }))}
+                    >
+                      {day.complimentary ? "무료" : "유료"}
+                    </button>
+                  </td>
                   <td><button className="icon-button danger" aria-label="날짜 삭제" onClick={() => updateCompany((c) => ({ ...c, days: c.days.filter((d) => d.id !== day.id) }))}>×</button></td>
                 </tr>
               ))}</tbody>
@@ -253,8 +284,13 @@ export default function Home() {
                     days: c.days.map((d) => ({ ...d, attendees: d.attendees.filter((id) => id !== person.id) })),
                   }))}>×</button>
                 </div>
-                <p>{counts[person.id]}회 × {won(company.price)}</p>
-                <strong>{won(counts[person.id] * company.price)}</strong>
+                <p>
+                  {chargeableCounts[person.id]}회 × {won(company.price)}
+                  {counts[person.id] > chargeableCounts[person.id]
+                    ? ` · 무료 ${counts[person.id] - chargeableCounts[person.id]}회`
+                    : ""}
+                </p>
+                <strong>{won(chargeableCounts[person.id] * company.price)}</strong>
                 <button className="pay" onClick={() => updateCompany((c) => ({
                   ...c, people: c.people.map((p) => p.id === person.id ? { ...p, paid: !p.paid } : p),
                 }))}>{person.paid ? "✓ 입금 완료" : "입금 대기"}</button>
@@ -267,3 +303,4 @@ export default function Home() {
     </main>
   );
 }
+
