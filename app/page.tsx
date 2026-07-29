@@ -38,6 +38,7 @@ export default function Home() {
   const [activeId, setActiveId] = useState("ondam");
   const [ready, setReady] = useState(false);
   const [sync, setSync] = useState<"saving" | "saved" | "offline">("saving");
+  const [newLunchDate, setNewLunchDate] = useState(() => new Date().toISOString().slice(0, 10));
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -101,6 +102,21 @@ export default function Home() {
       companies: [...prev.companies, { id, name: name.trim(), price: 7000, people: [], days: [] }],
     }));
     setActiveId(id);
+  };
+
+  const addLunchDay = () => {
+    if (!newLunchDate) return;
+    updateCompany((current) => ({
+      ...current,
+      days: [
+        ...current.days,
+        {
+          id: crypto.randomUUID(),
+          date: newLunchDate,
+          attendees: [],
+        },
+      ].sort((a, b) => a.date.localeCompare(b.date)),
+    }));
   };
 
   return (
@@ -169,10 +185,17 @@ export default function Home() {
         <section className="card">
           <div className="section-head">
             <div><p className="eyebrow">ATTENDANCE</p><h2>날짜별 식사 체크</h2></div>
-            <button className="small-button dark" onClick={() => updateCompany((c) => ({
-              ...c,
-              days: [...c.days, { id: crypto.randomUUID(), date: new Date().toISOString().slice(0, 10), attendees: [] }],
-            }))}>＋ 날짜 추가</button>
+            <div className="date-adder">
+              <label>
+                <span>추가할 날짜</span>
+                <input
+                  type="date"
+                  value={newLunchDate}
+                  onChange={(event) => setNewLunchDate(event.target.value)}
+                />
+              </label>
+              <button className="small-button dark" onClick={addLunchDay}>＋ 날짜 추가</button>
+            </div>
           </div>
           <div className="table-wrap">
             <table>
@@ -242,3 +265,4 @@ export default function Home() {
     </main>
   );
 }
+
