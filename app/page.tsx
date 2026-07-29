@@ -122,7 +122,10 @@ export default function Home() {
   return (
     <main>
       <nav className="topbar">
-        <div className="brand"><span className="mark">▲</span> 점심정산</div>
+        <div className="brand">
+          <span className="brand-icon"><img src="/brand-logo.png" alt="" /></span>
+          점심정산
+        </div>
         <div className={`sync ${sync}`}>
           <i /> {sync === "saved" ? "모두 저장됨" : sync === "saving" ? "저장 중" : "기기 저장 중"}
         </div>
@@ -131,7 +134,6 @@ export default function Home() {
       <section className="hero">
         <div className="mesh" />
         <p className="eyebrow">LUNCH SETTLEMENT</p>
-        <h1>먹은 만큼만,<br />정확하게 정산하세요.</h1>
         <p>업체별 주문 기록부터 개인별 입금 확인까지 한곳에서 관리합니다.</p>
       </section>
 
@@ -265,4 +267,3 @@ export default function Home() {
     </main>
   );
 }
-
