@@ -1,3 +1,6 @@
+Exit code: 0
+Wall time: 0.7 seconds
+Output:
 @import "tailwindcss";
 
 :root { --ink:#171717; --body:#4d4d4d; --mute:#8f8f8f; --line:#ebebeb; --canvas:#fafafa; --white:#fff; --blue:#0070f3; }
@@ -54,6 +57,8 @@ td:first-child input { display:block; width:145px; border:1px solid var(--line);
 td:first-child span { display:block; margin-top:5px; color:var(--mute); font-size:11px; }
 .check { width:32px; height:32px; border:1px solid #d8d8d8; border-radius:6px; background:white; color:white; font-weight:700; }
 .check.on { background:var(--ink); border-color:var(--ink); }
+.sample-toggle { min-width:50px; height:30px; border:1px solid var(--line); border-radius:999px; background:#f5f5f5; color:var(--body); font-size:11px; font-weight:600; }
+.sample-toggle.on { border-color:#b8d5ff; background:#eef6ff; color:var(--blue); }
 .icon-button { border:0; background:transparent; color:var(--mute); font-size:20px; }
 .danger:hover { color:#ee0000; }
 .people-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
@@ -76,3 +81,4 @@ button:focus-visible,input:focus-visible { outline:2px solid var(--blue); outlin
   .people-grid{grid-template-columns:1fr}.card{padding:16px}.tabs .add-tab{margin-left:0}
   .section-head{align-items:flex-start;flex-direction:column}.date-adder{width:100%}.date-adder label{flex:1}.date-adder input{width:100%}
 }
+
